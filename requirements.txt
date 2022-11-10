@@ -1,0 +1,8 @@
+numpy==1.22.3
+dash==2.3.0
+dash-bootstrap-components==0.12.2
+plotly==5.1.0
+fastapi==0.75.1
+uvicorn==0.15.0
+starlette==0.17.1
+openpyxl==3.0.7
