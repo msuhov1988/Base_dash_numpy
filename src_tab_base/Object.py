@@ -1,5 +1,6 @@
 from .Basics import ForOneSign, LineType, OldSign
 from . import ObjectConstants as Obc
+from . import ObjectCache as Caching
 import numpy as np
 import sqlite3
 from collections import namedtuple, defaultdict
@@ -166,7 +167,6 @@ class Matrix:
     def crt_lost(self, sign_matrix: np.array, data_matrix: np.array, attr: str, result: dict[str, np.array],
                  ax1_beg: int = None, ax1_end: int = None) -> np.array:
         if ax1_beg is not None and ax1_end is not None:
-            print(ax1_end)
             if ax1_end == self.month_range.size:
                 res = np.array([0], dtype=np.float32)
                 result[attr] = res
@@ -217,21 +217,28 @@ class Matrix:
         shop_attrs = set_attrs.difference(cart_attrs)
         sets_data = {attr: getattr(self, attr)(ax0_slice, ax1_beg, ax1_end) for attr in shop_attrs}
         if cart_attrs:
-            if ax0_slice != Ellipsis:
-                indexes = np.isin(self.shop_cart[..., 0], ax0_slice)
-                sign_matrix = self.shop_cart[indexes]
-                data_matrix = self.active_carts[indexes]
-            else:
-                sign_matrix = self.shop_cart
-                data_matrix = self.active_carts
-            threads = list()
-            for attr in cart_attrs:
-                threads.append(Thread(target=getattr(self, attr), args=(sign_matrix, data_matrix, attr, sets_data,
-                                                                        ax1_beg, ax1_end)))
-            for thr in threads:
-                thr.start()
-            for thr in threads:
-                thr.join()
+            caching_data = Caching.cache_reading(attrs=cart_attrs, indexes=ax0_ind, ax1_beg=ax1_beg, ax1_end=ax1_end)
+            sets_data.update(caching_data)
+            not_cat = cart_attrs.difference(set(caching_data.keys()))
+            if not_cat:
+                if ax0_slice != Ellipsis:
+                    indexes = np.isin(self.shop_cart[..., 0], ax0_slice)
+                    sign_matrix = self.shop_cart[indexes]
+                    data_matrix = self.active_carts[indexes]
+                else:
+                    sign_matrix = self.shop_cart
+                    data_matrix = self.active_carts
+                threads = list()
+                not_cdt = dict()
+                for attr in not_cat:
+                    threads.append(Thread(target=getattr(self, attr), args=(sign_matrix, data_matrix, attr, not_cdt,
+                                                                            ax1_beg, ax1_end)))
+                for thr in threads:
+                    thr.start()
+                for thr in threads:
+                    thr.join()
+                sets_data.update(not_cdt)
+                Caching.cache_writing(data=not_cdt, indexes=ax0_ind, ax1_beg=ax1_beg, ax1_end=ax1_end)
         return sets_data
     
     def calculate_by_month(self, kit_name: str, old_name: str,

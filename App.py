@@ -41,6 +41,11 @@ Callbacks.base_register_callbacks(app, OBJECT, REFERS, DROP_SHOP)
 server = FastAPI()
 server.mount("", WSGIMiddleware(app.server))
 
+
 if __name__ == "__main__":
+    from src_tab_base import ObjectCache
+    from threading import Thread
+
+    Thread(target=ObjectCache.cache_start, daemon=True).start()
     uvicorn.run("App:server", host="0.0.0.0", port=8050, workers=3)
     # app.run_server(host="127.0.0.1", debug=True)
