@@ -17,6 +17,9 @@ KITS = ("ОСН-Й", "СРАВН")
 ENDS_OF_SALES = ("НАЧАЛО ПРОДАЖ", "КОНЕЦ ПРОДАЖ")
 PERIOD_TRUNC_WARNING = ("ВНИМАНИЕ! Период(ы) урезан(ы) из-за показателей: выручка без бонусов, себестоимость, списания."
                         " Или показателей, зависящих от перечисленных.")
+PERIOD_INCORRECT_SET = ("ВНИМАНИЕ! Период(ы) установлен(ы) не корректно."
+                        " Или для него(них) отсутствуют данные в базе по показателям:"
+                        " выручка без бонусов, себестоимость, списания или(и) их производным.")
 
 
 def graph_update(obj, divs: list, regs: list, cities: list, shops: list, opt_shops: list[dict[str, int]],
@@ -169,7 +172,7 @@ def table_update(obj, div: list, reg: list, city: list, tt: list, opt_tt: list[d
         if begin_compare <= end_compare:
             periods.insert(0, (begin_compare, end_compare))
     if not periods:
-        return []
+        return [], PERIOD_INCORRECT_SET
     periods_quantity = len(periods)
     columns = _table_columns(periods=periods, table_slice=table_slice, for_one=for_one, old=old, attributes=attributes)
 
